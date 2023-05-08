@@ -200,6 +200,7 @@ bool Listener::wait(Signaler& signaler) {
 
 void ExclusiveResource::startNext() {  
   current.signalAll();
+  if(busy) return;
   Listener* f = waiting.first();
   if(f) {
     alive = true;
@@ -211,8 +212,7 @@ void ExclusiveResource::startNext() {
 bool ExclusiveResource::keepLock(Listener& listener) {
   Listener* f = current.first();
   if(f != &listener) {
-    listener.wait(waiting);
-    if(busy) return false;
+    listener.wait(waiting);    
 	if(!current.isEmpty()) return false;    
     startNext();
     if(current.first() != &listener) return false;
@@ -249,11 +249,11 @@ bool ExclusiveResource::isBusy() {
 	return busy;
 }
 
-void ExclusiveResource::process() {
-	if(busy) return;	
+void ExclusiveResource::process() {	
 	if(current.isEmpty() || !alive) {
     	startNext();
 	}
+	if(busy) return;
     Listener* f = current.first();
 	if(f) {
 	    alive = false;
