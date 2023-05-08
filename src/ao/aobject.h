@@ -43,6 +43,8 @@ public:
 	
 	void signal();
 	
+	void reSignal();	
+	
 	void add(ao_time& time, const long delta);
 	
 	bool reached(const ao_time& time);
@@ -141,6 +143,46 @@ public:
 			queue.get(i)->signal();
 		}
 	}
+
+  Listener* first() {
+    return queue.getFirst();
+  }
+
+  bool hasListeners() {
+    return queue.first;
+  }
+
+  bool isEmpty() {
+    return !queue.first;
+  }
+
+  void clear() {
+    queue.clear();
+  }
+
+};
+
+class ExclusiveResource: public AObject {
+private:
+  Signaler waiting;    
+  Signaler current;
+  bool alive;
+  bool busy;  
+  void startNext();
+public:
+
+  bool keepLock(Listener& listener);
+
+  void unlock();
+  
+  void signalLocker();
+
+  void process();
+  
+  void setBusy(bool busy);
+  
+  bool isBusy();
+
 };
 
 ao_time ao_loop();

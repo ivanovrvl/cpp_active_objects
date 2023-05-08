@@ -60,6 +60,11 @@ void AObject::signal() {
 	signal0();
 }
 
+void AObject::reSignal() {
+	immediate.remove();
+	signal();
+}
+
 void AObject::add(ao_time& time, long delta) {
 	time += delta;
 	if(!time) time = 1;
@@ -191,6 +196,71 @@ bool Listener::wait(Signaler& signaler) {
 	if(queue.inList(signaler.queue)) return true;
 	signaler.queue.add(&queue);
 	return false;	
+}
+
+void ExclusiveResource::startNext() {  
+  current.signalAll();
+  Listener* f = waiting.first();
+  if(f) {
+    alive = true;
+    f->wait(current);
+    signal();
+  }
+}
+
+bool ExclusiveResource::keepLock(Listener& listener) {
+  Listener* f = current.first();
+  if(f != &listener) {
+    listener.wait(waiting);
+    if(busy) return false;
+	if(!current.isEmpty()) return false;    
+    startNext();
+    if(current.first() != &listener) return false;
+  }
+  alive = true;
+  return true;
+}
+
+void ExclusiveResource::signalLocker() {
+  Listener* f = current.first();
+  if(f) {
+    f->signal();
+    f->wait(current);
+  }
+}
+
+void ExclusiveResource::unlock() {
+  if(current.hasListeners()) {
+  	current.signalAll();
+  	signal();
+  }
+}
+
+void ExclusiveResource::setBusy(bool busy) {
+	if(this->busy == busy) return;
+	this->busy = busy;
+	if(!busy) {
+		alive = true;
+		signal();
+	}
+}
+
+bool ExclusiveResource::isBusy() {
+	return busy;
+}
+
+void ExclusiveResource::process() {
+	if(busy) return;	
+	if(current.isEmpty() || !alive) {
+    	startNext();
+	}
+    Listener* f = current.first();
+	if(f) {
+	    alive = false;
+	    f->signal();
+		f->wait(current);
+	    reSignal();
+	}
 }
 
 bool ao_time_ge(const ao_time& t1, const ao_time& t2) {
