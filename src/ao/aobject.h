@@ -4,6 +4,10 @@
 #include "linked_list.h"
 #include "avl_tree.h"
 
+#define NO_LOCK 0
+#define LOCKED 1
+#define NEW_LOCK 2
+
 typedef unsigned long ao_time;
 
 const ao_time ao_max_time_half = 0x80000000;
@@ -166,12 +170,13 @@ class ExclusiveResource: public AObject {
 private:
   Signaler waiting;    
   Signaler current;
+  bool newLock;
   bool alive;
   bool busy;  
   void startNext();
 public:
-
-  bool keepLock(Listener& listener);
+  
+  char lock(Listener& listener);
 
   void unlock();
   

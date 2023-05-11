@@ -203,22 +203,28 @@ void ExclusiveResource::startNext() {
   if(busy) return;
   Listener* f = waiting.first();
   if(f) {
+  	newLock = true;
     alive = true;
     f->wait(current);
     signal();
   }
 }
 
-bool ExclusiveResource::keepLock(Listener& listener) {
+char ExclusiveResource::lock(Listener& listener) {
   Listener* f = current.first();
   if(f != &listener) {
     listener.wait(waiting);    
-	if(!current.isEmpty()) return false;    
+	if(!current.isEmpty()) return NO_LOCK;    
     startNext();
-    if(current.first() != &listener) return false;
+    if(current.first() != &listener) return NO_LOCK;
   }
   alive = true;
-  return true;
+  bool old = newLock;
+  newLock = false;
+  if(old)
+  	return NEW_LOCK;
+  else
+  	return LOCKED;
 }
 
 void ExclusiveResource::signalLocker() {
