@@ -176,16 +176,20 @@ Listener* dummyListener;
 Signaler::Signaler() : queue((char*)(&(dummyListener->queue)) - (char*)dummyListener) {		
 }
 
-void Listener::signal() {
-	queue.remove();
+void Listener::notify() {
 	switch(type) {
 		case 0:
-			((AOListener*)this)->signal();
+			((AOListener*)this)->notify();
 			break;
 		case 1:
-			((CBListener*)this)->signal();
+			((CBListener*)this)->notify();
 			break;							
 	}
+}
+
+void Listener::signal() {
+	queue.remove();
+	notify();
 }
 
 bool Listener::waiting(const Signaler& signaler) {
@@ -198,41 +202,41 @@ bool Listener::wait(Signaler& signaler) {
 	return false;	
 }
 
-void ExclusiveResource::startNext() {  
+void ExclusiveResource::next() {  
   current.signalAll();
   if(busy) return;
   Listener* f = waiting.first();
   if(f) {
-  	newLock = true;
+  	started = false;
     alive = true;
     f->wait(current);
     signal();
   }
 }
 
-char ExclusiveResource::lock(Listener& listener) {
+bool ExclusiveResource::lock(Listener& listener) {
   Listener* f = current.first();
   if(f != &listener) {
     listener.wait(waiting);    
-	if(!current.isEmpty()) return NO_LOCK;    
-    startNext();
-    if(current.first() != &listener) return NO_LOCK;
+	if(!current.isEmpty()) return false;    
+    next();
+    if(current.first() != &listener) return false;
   }
   alive = true;
-  bool old = newLock;
-  newLock = false;
-  if(old)
-  	return NEW_LOCK;
-  else
-  	return LOCKED;
+  return true;
 }
 
-void ExclusiveResource::signalLocker() {
+void ExclusiveResource::notifyLocker() {
   Listener* f = current.first();
   if(f) {
-    f->signal();
-    f->wait(current);
+    f->notify();
   }
+}
+
+void ExclusiveResource::unlock(Listener& listener) {
+	if(current.first() == &listener) {
+		unlock();
+	}
 }
 
 void ExclusiveResource::unlock() {
@@ -255,16 +259,30 @@ bool ExclusiveResource::isBusy() {
 	return busy;
 }
 
+void ExclusiveResource::setStarted(bool started) {
+	if(this->started == started) return;
+	this->started = started;
+}
+
+bool ExclusiveResource::start() {
+	if(started) return false;
+	setStarted(true);
+	return true;
+}
+
+bool ExclusiveResource::isStarted() {
+	return started;
+}
+
 void ExclusiveResource::process() {	
 	if(current.isEmpty() || !alive) {
-    	startNext();
+    	next();
 	}
 	if(busy) return;
     Listener* f = current.first();
 	if(f) {
 	    alive = false;
-	    f->signal();
-		f->wait(current);
+	    f->notify();
 	    reSignal();
 	}
 }

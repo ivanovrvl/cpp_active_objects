@@ -4,10 +4,6 @@
 #include "linked_list.h"
 #include "avl_tree.h"
 
-#define NO_LOCK 0
-#define LOCKED 1
-#define NEW_LOCK 2
-
 typedef unsigned long ao_time;
 
 const ao_time ao_max_time_half = 0x80000000;
@@ -35,16 +31,6 @@ public:
 
 	void getNow(ao_time& time);
 
-	virtual void process() {}
-
-	void processInternal() {
-		process();
-	}
-	
-	virtual bool shutdown() {
-		return true;
-	}
-	
 	void signal();
 	
 	void reSignal();	
@@ -60,6 +46,19 @@ public:
 	void delay(ao_time& time, const long delay);
 	
 	void addDelay(ao_time& time, const long delay);
+	
+	void processInternal() {
+		process();
+	}	
+
+protected:
+
+	virtual void process() {}
+
+	virtual bool shutdown() {
+		return true;
+	}
+	
 
 };
 
@@ -89,6 +88,8 @@ public:
 		this->type = type;
 	}
 		
+	void notify();		
+		
 	void signal();
 	
 	bool waiting(const Signaler& signaler);
@@ -117,7 +118,7 @@ public:
 		this->aObject = aObject;
 	}
 
-	void signal() {
+	void notify() {
 		aObject->signal();
 	}
 	
@@ -131,7 +132,7 @@ public:
 		this->callback = callback;
 	}
 	
-	void signal() {
+	void notify() {
 		callback();
 	}
 	
@@ -170,24 +171,62 @@ class ExclusiveResource: public AObject {
 private:
   Signaler waiting;    
   Signaler current;
-  bool newLock;
+  bool started;
   bool alive;
   bool busy;  
-  void startNext();
+  void next();
 public:
   
-  char lock(Listener& listener);
+  bool lock(Listener& listener);
+
+  void unlock(Listener& listener);
 
   void unlock();
   
-  void signalLocker();
+  void notifyLocker();
 
-  void process();
-  
   void setBusy(bool busy);
   
   bool isBusy();
 
+  void setStarted(bool started);
+  
+  bool isStarted();
+  
+  bool start();
+
+protected:
+  void process();
+
+};
+
+class GPIO: ExclusiveResource {
+public:	
+  int pin;
+  
+  GPIO(int pin) {
+  	this->pin = pin;  	
+  }
+  
+  void set(int val);
+
+  bool lock(Listener& listener) {
+  	if(!ExclusiveResource::lock(listener)) return false;
+  	setBusy(true);
+	return true;
+  }
+
+  void unlock() {
+  	setBusy(false);  
+  	ExclusiveResource::unlock();
+  }
+  
+  using ExclusiveResource::setStarted;
+  
+  using ExclusiveResource::isStarted;
+  
+  using ExclusiveResource::start;
+	
 };
 
 ao_time ao_loop();
