@@ -1,8 +1,11 @@
 #ifndef ao_arduino_h
 #define ao_arduino_h
 
-byte BC_START_DELAY = 1;
-byte BC_EVENT_PERIOD = 3;
+#include <Arduino.h>
+#include "aobject.h"
+
+#define BC_START_DELAY  1
+#define  BC_EVENT_PERIOD  3
 
 class Button {
 public:
@@ -43,11 +46,10 @@ public:
 
 	void process() {
     if(reached(next)) {     
-      addDelay(next, checkPeriod);
+      addDelay(next, checkPeriod);      
       bool event = false;
-      bool event2 = false;
       Button* btn = buttons;
-      for(int i=0; i<count; i++) {        
+      for(int i=0; i<count; i++) {                
         if(isPressed(btn->pin)) { 
           switch(btn->pressed) {
             case 0xFF:
@@ -69,13 +71,26 @@ public:
               btn->pressed = 0;
               event = true;
           }
-        }
-        if(event) buttonEvent.signalAll();
+        }        
         btn++;
       }
+      if(event) buttonEvent.signalAll();
     }
 	}
 
+};
+
+class GPIOtone: public GPIO {
+protected:
+  void clearLock() {
+    setTone(0);
+    GPIO::clearLock();
+  }
+public:
+
+  GPIOtone(byte pin):GPIO(pin) {};
+
+  void setTone(int val);
 };
 
 class LEDSignalerTask {
@@ -201,6 +216,8 @@ public:
   }
 
 };
+
+
 
 #endif
 
