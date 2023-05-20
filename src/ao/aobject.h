@@ -179,7 +179,7 @@ public:
   
   bool lock(Listener& listener);
 
-  void unlock(Listener& listener);
+  bool unlock(Listener& listener);
 
   void unlock();
   
@@ -189,6 +189,8 @@ public:
   
   bool isBusy();
 
+  bool isLocked();
+
   void setStarted(bool started);
   
   bool isStarted();
@@ -196,36 +198,37 @@ public:
   bool start();
 
 protected:
-  void process();
+  void process() override;
+
+  virtual void clearLock() {};
 
 };
 
 class GPIO: ExclusiveResource {
+protected:
+  void clearLock() {
+    setBusy(false);    
+  }
 public:	
   int pin;
   
   GPIO(int pin) {
   	this->pin = pin;  	
   }
-  
+
   void set(int val);
 
   bool lock(Listener& listener) {
   	if(!ExclusiveResource::lock(listener)) return false;
   	setBusy(true);
-	return true;
+	  return true;
   }
 
-  void unlock() {
-  	setBusy(false);  
-  	ExclusiveResource::unlock();
-  }
-  
-  using ExclusiveResource::setStarted;
-  
-  using ExclusiveResource::isStarted;
-  
+  using ExclusiveResource::setStarted;  
+  using ExclusiveResource::isStarted;  
+  using ExclusiveResource::isLocked;  
   using ExclusiveResource::start;
+  using ExclusiveResource::unlock;
 	
 };
 

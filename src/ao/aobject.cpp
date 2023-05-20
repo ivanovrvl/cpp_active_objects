@@ -202,8 +202,11 @@ bool Listener::wait(Signaler& signaler) {
 	return false;	
 }
 
-void ExclusiveResource::next() {  
-  current.signalAll();
+void ExclusiveResource::next() {
+  if(current.hasListeners()) {
+    clearLock();
+    current.signalAll();    
+  }
   if(busy) return;
   Listener* f = waiting.first();
   if(f) {
@@ -226,6 +229,10 @@ bool ExclusiveResource::lock(Listener& listener) {
   return true;
 }
 
+bool ExclusiveResource::isLocked() {
+  return current.hasListeners();
+}
+
 void ExclusiveResource::notifyLocker() {
   Listener* f = current.first();
   if(f) {
@@ -233,15 +240,18 @@ void ExclusiveResource::notifyLocker() {
   }
 }
 
-void ExclusiveResource::unlock(Listener& listener) {
+bool ExclusiveResource::unlock(Listener& listener) {
 	if(current.first() == &listener) {
 		unlock();
+    return true;
 	}
+  return false;
 }
 
 void ExclusiveResource::unlock() {
   if(current.hasListeners()) {
-  	current.signalAll();
+  	clearLock();
+    current.signalAll();    
   	signal();
   }
 }
@@ -279,7 +289,7 @@ void ExclusiveResource::process() {
     	next();
 	}
 	if(busy) return;
-    Listener* f = current.first();
+  Listener* f = current.first();
 	if(f) {
 	    alive = false;
 	    f->notify();
