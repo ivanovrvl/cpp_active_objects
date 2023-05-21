@@ -1,5 +1,5 @@
-#ifndef ao_arduino_h
-#define ao_arduino_h
+#ifndef aoArduino_h
+#define aoArduino_h
 
 #include <Arduino.h>
 #include "aobject.h"

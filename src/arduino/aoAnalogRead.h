@@ -1,5 +1,5 @@
-#ifndef ao_analogread
-#define ao_analogread
+#ifndef aoAnalogRead_h
+#define aoAnalogRead_h
 
 #include "aobject.h"
 #include <Arduino.h>

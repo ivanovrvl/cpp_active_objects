@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include "ao_arduino.h"
+#include "aoArduino.h"
 
 void GPIOtone::setTone(int val) {
   if(tone <= 0)

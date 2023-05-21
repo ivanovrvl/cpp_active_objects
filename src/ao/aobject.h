@@ -198,7 +198,7 @@ public:
   bool start();
 
 protected:
-  void process() override;
+  void process();
 
   virtual void clearLock() {};
 

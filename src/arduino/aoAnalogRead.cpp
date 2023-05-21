@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include <analogReadAsync.h>
-#include "ao_analogread.h"
+#include "aoAnalogRead.h"
 
 bool ExclusiveAnalogReader::read(byte pin, Listener& listener, int& value) {
   if(lock(listener)) {
