@@ -37,10 +37,10 @@ class LinkedList {
 private:  
   unsigned int shift;
   int count;
-	LinkedListItem<T>* first;
-	LinkedListItem<T>* last;  
 	
 public:
+	LinkedListItem<T>* first;
+	LinkedListItem<T>* last;  
 
   LinkedList(unsigned int shift) {
     this->shift = shift;
@@ -125,6 +125,11 @@ public:
   	return get(removeFirstItem());  	
   }
   
+  T* getFirst() {
+    if(!first) return 0;
+    return get(first);
+  }
+
   void clear() {
 	  LinkedListItem<T>* p = first;
 	  if(p) {

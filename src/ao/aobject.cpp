@@ -193,6 +193,55 @@ bool Listener::wait(Signaler& signaler) {
 	return false;	
 }
 
+void ExclusiveResource::startNext() {  
+  current.signalAll();
+  Listener* f = queue.first();
+  if(f) {
+    isAlive = true;
+    f->wait(current);
+    signal();
+  }
+}
+
+bool ExclusiveResource::keepLock(Listener& listener) {
+  if(current.first() != &listener) {
+    listener.wait(queue);
+    if(!current.isEmpty()) return false;
+    startNext();
+    if(current.first() != &listener) return false;
+  }
+  isAlive = true;
+  return true;
+}
+
+bool ExclusiveResource::isLockedBy(Listener& listener) {
+  return current.first() != &listener;
+}
+
+void ExclusiveResource::signalLocker() {
+  Listener* f = current.first();
+  if(f) {
+    f->signal();
+    f->wait(current);
+  }
+}
+
+void ExclusiveResource::unlock() {
+  startNext();
+}
+
+void ExclusiveResource::process() {
+  if(!isAlive || current.isEmpty()) {        
+    startNext();
+  }
+  Listener* f = current.first();
+  if(f) {
+    isAlive = false;
+    f->signal();    
+    signal();
+  }
+}
+
 bool ao_time_ge(const ao_time& t1, const ao_time& t2) {
 	return (t1 - t2) < ao_max_time_half;
 }

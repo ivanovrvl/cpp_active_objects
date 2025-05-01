@@ -141,6 +141,43 @@ public:
 			queue.get(i)->signal();
 		}
 	}
+
+  Listener* first() {
+    return queue.getFirst();
+  }
+
+  bool hasListeners() {
+    return queue.first;
+  }
+
+  bool isEmpty() {
+    return !queue.first;
+  }
+
+  void clear() {
+    queue.clear();
+  }
+
+};
+
+class ExclusiveResource: public AObject {
+private:
+  Signaler queue;
+  Signaler current;
+  bool isAlive;
+  void startNext();
+public:
+
+  bool isLockedBy(Listener& listener);
+
+  bool keepLock(Listener& listener);
+
+  void unlock();
+
+  void signalLocker();
+
+  void process();
+
 };
 
 ao_time ao_loop();
