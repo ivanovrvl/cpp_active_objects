@@ -67,25 +67,20 @@ class Test1: public AObject {
 AOListener listener;
 ao_time nextTime;
 char name;
-bool pause;
 public:
 	Test1(char name) : listener(this) {
 		this->name = name;
 	}
 	void process() {
-		if(!pause || reached(nextTime)) {
-			pause = false;
-			if(res2.lock(listener)) {
-				if(res2.start()) {
-					log(name);
-					delay(nextTime, 1000);
-				} else {
-					if(clearReached(nextTime)) {
-						res2.unlock();						
-						delay(nextTime, 20);
-						pause = true;
-					}					
-				}
+		if(res2.lock(listener)) {
+			if(res2.start()) {
+				log(name);
+				delay(nextTime, 1000);
+			} else {
+				if(clearReached(nextTime)) {
+					res2.unlock();						
+					signal();
+				}					
 			}
 		}
 	}	
@@ -93,7 +88,7 @@ public:
 
 Test1 test1('1');
 Test1 test2('2');
-//Test1 test3('3');
+Test1 test3('3');
 
 int main(int argc, char** argv) {
 	if(true) {	
